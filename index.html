@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f4ee">
+<title>Morning Routine</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#1d302b;background:#f6f4ee}*{box-sizing:border-box}body{margin:0;padding:env(safe-area-inset-top) 18px env(safe-area-inset-bottom)}main{max-width:520px;margin:0 auto;padding:38px 0 50px}.eyebrow{font-size:12px;font-weight:800;letter-spacing:2px;color:#52776b;text-transform:uppercase}h1{font-size:36px;letter-spacing:-1.3px;margin:8px 0 8px}p{line-height:1.5;color:#5a6d65}.intro{margin:0 0 26px}.summary{background:#234b3e;color:white;border-radius:22px;padding:22px;margin-bottom:20px}.summary small{color:#cce4d7}.summary strong{display:block;font-size:30px;margin:7px 0}.summary p{color:#d9e9e1;margin:0;font-size:14px}.card{background:#fff;border:1px solid #e4e8e1;border-radius:20px;padding:22px;margin:14px 0;box-shadow:0 4px 16px #1e3d2c0a}.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.emoji{font-size:30px}h2{font-size:21px;margin:8px 0 3px}.sub{margin:0 0 16px;font-size:14px}.counter{font-size:14px;font-weight:700;color:#426456}.track{height:11px;background:#e9eee9;border-radius:99px;overflow:hidden;margin:12px 0 9px}.fill{height:100%;width:0;background:#76aa83;border-radius:99px;transition:width .2s}.remaining{font-size:14px;color:#5b6f63;margin-bottom:18px}button{width:100%;min-height:52px;border:0;border-radius:13px;background:#245442;color:#fff;font-size:16px;font-weight:750;cursor:pointer;touch-action:manipulation}button:disabled{background:#e0eae2;color:#315c47;cursor:default}.foot{font-size:12px;text-align:center;margin-top:24px;color:#728078}.status{font-size:13px;color:#426456;margin-top:10px;min-height:20px}@media(prefers-reduced-motion:reduce){.fill{transition:none}}
+</style>
+</head>
+<body>
+<main>
+<div class="eyebrow">Your daily reset</div>
+<h1>Morning Routine ☀️</h1>
+<p class="intro" id="dateLine"></p>
+<section class="summary" aria-label="Weekly overview"><small>THIS WEEK'S PROGRESS</small><strong id="total">0 of 6 sessions</strong><p id="weekRange"></p></section>
+<section class="card" aria-labelledby="walkTitle"><div class="top"><div><div class="emoji" aria-hidden="true">🚶</div><h2 id="walkTitle">15-minute walk</h2></div><span class="counter" id="walkCount">0 / 3</span></div><p class="sub">Get moving and start fresh.</p><div class="track" role="progressbar" aria-label="Walk weekly progress" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0" id="walkTrack"><div class="fill" id="walkFill"></div></div><div class="remaining" id="walkLeft">3 sessions left this week</div><button type="button" id="walkButton">Log today's walk</button><div class="status" id="walkStatus" aria-live="polite"></div></section>
+<section class="card" aria-labelledby="readTitle"><div class="top"><div><div class="emoji" aria-hidden="true">📖</div><h2 id="readTitle">10 minutes of reading</h2></div><span class="counter" id="readCount">0 / 3</span></div><p class="sub">Give your mind a head start.</p><div class="track" role="progressbar" aria-label="Reading weekly progress" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0" id="readTrack"><div class="fill" id="readFill"></div></div><div class="remaining" id="readLeft">3 sessions left this week</div><button type="button" id="readButton">Log today's reading</button><div class="status" id="readStatus" aria-live="polite"></div></section>
+<p class="foot">Saved on this device • New week starts Monday<br>Only tap after completing the habit.</p>
+</main>
+<script>
+(function(){
+'use strict';
+const KEY='morning-routine-v1';
+const habits=['walk','read'];
+let records={walk:[],read:[]};
+try{const saved=JSON.parse(localStorage.getItem(KEY));if(saved&&typeof saved==='object'){for(const h of habits){if(Array.isArray(saved[h]))records[h]=saved[h].filter(x=>typeof x==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x));}}}catch(e){console.warn('Saved progress could not be loaded.',e);}
+const el=id=>document.getElementById(id);
+const localKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const mondayOf=d=>{const m=new Date(d.getFullYear(),d.getMonth(),d.getDate());m.setDate(m.getDate()-(m.getDay()+6)%7);return m;};
+const nice=d=>d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+function render(){const now=new Date(),today=localKey(now),monday=mondayOf(now),start=localKey(monday),sunday=new Date(monday);sunday.setDate(sunday.getDate()+6);const end=localKey(sunday);
+el('dateLine').textContent=now.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+el('weekRange').textContent=`${nice(monday)} – ${nice(sunday)} · Monday to Sunday`;
+let total=0;
+for(const h of habits){const count=records[h].filter(x=>x>=start&&x<=end).length;const capped=Math.min(3,count);total+=capped;const done=records[h].includes(today);const left=Math.max(0,3-count);
+el(h+'Count').textContent=`${capped} / 3`;
+el(h+'Fill').style.width=`${capped/3*100}%`;
+el(h+'Track').setAttribute('aria-valuenow',String(capped));
+el(h+'Left').textContent=left===0?'Weekly goal complete! 🎉':`${left} session${left===1?'':'s'} left this week`;
+el(h+'Button').disabled=done;
+el(h+'Button').textContent=done?'✓ Logged today':h==='walk'?"Log today's walk":"Log today's reading";
+el(h+'Status').textContent=done?'Great job! Come back tomorrow.':'';
+}
+el('total').textContent=`${total} of 6 sessions`;
+}
+function log(h){const today=localKey(new Date());if(records[h].includes(today))return;records[h].push(today);try{localStorage.setItem(KEY,JSON.stringify(records));}catch(e){alert('Your browser could not save progress. Check that storage is enabled.');records[h].pop();return;}render();}
+for(const h of habits)el(h+'Button').addEventListener('click',()=>log(h));
+render();document.addEventListener('visibilitychange',()=>{if(!document.hidden)render();});window.addEventListener('focus',render);
+})();
+</script>
+</body>
+</html>
